@@ -43,7 +43,7 @@ Public Class PeopleExtractorr
     Private Sub butGO_Click(sender As Object, e As EventArgs) Handles butGO.Click
         FacesDetected = 0
         PictureBox2.Visible = False
-
+        ImageCollection.Clear()
         strScanDir = txtScan.Text
         strExportDir = txtExport.Text
         If Not Directory.Exists(strExportDir) Then
