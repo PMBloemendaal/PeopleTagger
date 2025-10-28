@@ -194,9 +194,9 @@ Public Class PeopleExtractorr
         End If
         Dim strSaveFile As String
         Dim n As Integer = 1
-        strSaveFile = CreateDate.ToString("yyyymmdd-HHmmss")
+        strSaveFile = CreateDate.ToString("yyyyMMdd-HHmmss")
         While File.Exists(strExportDir & "\" & strFaceName & "\" & strSaveFile & ".jpg")
-            strSaveFile = CreateDate.ToString("yyyymmdd-HHmmss") & " " & n
+            strSaveFile = CreateDate.ToString("yyyyMMdd-HHmmss") & " " & n
             n += 1
         End While
         newSection.Save(strExportDir & "\" & strFaceName & "\" & strSaveFile & ".jpg", System.Drawing.Imaging.ImageFormat.Jpeg)
@@ -320,4 +320,6 @@ Public Class PeopleExtractorr
         SaveSetting("PeopleExtractor", "Setting", "ScanDir", strScanDir)
 
     End Sub
+
+
 End Class
