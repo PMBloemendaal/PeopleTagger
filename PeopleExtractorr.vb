@@ -3,6 +3,7 @@ Imports System.IO
 Imports System.Text.RegularExpressions
 Imports System.Xml
 Imports System.Windows.Shell
+Imports System.Globalization
 Public Class PeopleExtractorr
     Dim strExportDir As String
     Dim strScanDir As String
@@ -86,12 +87,15 @@ Public Class PeopleExtractorr
     Private Sub DetectFaces(strFileName As String)
 
         PictureBox1.Image = Bitmap.FromFile(strFileName)
+
         ToolStripStatusLabel1.Text = "Processing file : " & strFileName
 
         PictureBox1.Height = PictureBoxOrigHeight
         PictureBox1.Width = PictureBoxOrigWidth
         Dim ratioPictureBox As Single = CSng(PictureBox1.Width / PictureBox1.Height)
         Dim ratioImage As Single = CSng(PictureBox1.Image.Width / PictureBox1.Image.Height)
+        Dim Orientation As Integer = GetOrientation(PictureBox1.Image)
+
 
         If ratioImage > ratioPictureBox Then ' Landscape
             PictureBox1.Height = CInt(PictureBox1.Height / ratioImage)
@@ -106,6 +110,7 @@ Public Class PeopleExtractorr
         Dim infoReader As System.IO.FileInfo
         infoReader = My.Computer.FileSystem.GetFileInfo(strFileName)
         Dim fileSize As Long = infoReader.Length
+        Dim strFaceName As String
 
 
         Dim xDoc As New XmlDocument
@@ -113,19 +118,34 @@ Public Class PeopleExtractorr
 
         'Debug.Print("<hr/>Zoek elementen Description met attribuut Name zonder gebruik te maken van namespaces<br/>")
         Dim MetadataDate As Date
-        If Not IsNothing(xDoc.SelectSingleNode("//*[local-name()='Description']/@*[local-name()='MetadataDate']")) Then MetadataDate = CDate(xDoc.SelectSingleNode("//*[local-name()='Description']/@*[local-name()='MetadataDate']").Value)
+        If Not IsNothing(xDoc.SelectSingleNode("//*[local-name()='Description']/@*[local-name()='MetadataDate']")) Then
+            MetadataDate = CDate(xDoc.SelectSingleNode("//*[local-name()='Description']/@*[local-name()='MetadataDate']").Value)
+        End If
         Dim CreateDate As Date
-        If Not IsNothing(xDoc.SelectSingleNode("//*[local-name()='Description']/@*[local-name()='CreateDate']")) Then CreateDate = CDate(xDoc.SelectSingleNode("//*[local-name()='Description']/@*[local-name()='CreateDate']").Value)
+        If Not IsNothing(xDoc.SelectSingleNode("//*[local-name()='Description']/@*[local-name()='CreateDate']")) Then
+            CreateDate = CDate(xDoc.SelectSingleNode("//*[local-name()='Description']/@*[local-name()='CreateDate']").Value)
+        End If
         Dim ModifyDate As Date
-        If Not IsNothing(xDoc.SelectSingleNode("//*[local-name()='Description']/@*[local-name()='ModifyDate']")) Then ModifyDate = CDate(xDoc.SelectSingleNode("//*[local-name()='Description']/@*[local-name()='ModifyDate']").Value)
+        If Not IsNothing(xDoc.SelectSingleNode("//*[local-name()='Description']/@*[local-name()='ModifyDate']")) Then
+            ModifyDate = CDate(xDoc.SelectSingleNode("//*[local-name()='Description']/@*[local-name()='ModifyDate']").Value)
+        End If
         Dim DateTimeOriginal As Date
-        If Not IsNothing(xDoc.SelectSingleNode("//*[local-name()='Description']/@*[local-name()='DateTimeOriginal']")) Then DateTimeOriginal = CDate(xDoc.SelectSingleNode("//*[local-name()='Description']/@*[local-name()='DateTimeOriginal']").Value)
+        If Not IsNothing(xDoc.SelectSingleNode("//*[local-name()='Description']/@*[local-name()='DateTimeOriginal']")) Then
+            DateTimeOriginal = CDate(xDoc.SelectSingleNode("//*[local-name()='Description']/@*[local-name()='DateTimeOriginal']").Value)
+        End If
+
         Dim unit As String
-        If Not IsNothing(xDoc.SelectSingleNode("//*[local-name()='AppliedToDimensions']/@*[local-name()='unit']")) Then unit = xDoc.SelectSingleNode("//*[local-name()='AppliedToDimensions']/@*[local-name()='unit']").Value
+        If Not IsNothing(xDoc.SelectSingleNode("//*[local-name()='AppliedToDimensions']/@*[local-name()='unit']")) Then
+            unit = xDoc.SelectSingleNode("//*[local-name()='AppliedToDimensions']/@*[local-name()='unit']").Value
+        End If
         Dim DimH As Integer
-        If Not IsNothing(xDoc.SelectSingleNode("//*[local-name()='AppliedToDimensions']/@*[local-name()='h']")) Then DimH = CInt(xDoc.SelectSingleNode("//*[local-name()='AppliedToDimensions']/@*[local-name()='h']").Value)
+        If Not IsNothing(xDoc.SelectSingleNode("//*[local-name()='AppliedToDimensions']/@*[local-name()='h']")) Then
+            DimH = CInt(xDoc.SelectSingleNode("//*[local-name()='AppliedToDimensions']/@*[local-name()='h']").Value)
+        End If
         Dim DimW As Integer
-        If Not IsNothing(xDoc.SelectSingleNode("//*[local-name()='AppliedToDimensions']/@*[local-name()='w']")) Then DimW = CInt(xDoc.SelectSingleNode("//*[local-name()='AppliedToDimensions']/@*[local-name()='w']").Value)
+        If Not IsNothing(xDoc.SelectSingleNode("//*[local-name()='AppliedToDimensions']/@*[local-name()='w']")) Then
+            DimW = CInt(xDoc.SelectSingleNode("//*[local-name()='AppliedToDimensions']/@*[local-name()='w']").Value)
+        End If
 
         '        For Each el As System.Xml.XmlNode In xDoc.SelectNodes("//*[local-name()='Description' and @*[local-name()='Name']]")
         For Each el As System.Xml.XmlNode In xDoc.SelectNodes("//*[local-name()='Description' and @*[local-name()='Name'] and @*[local-name()='Type']]")
@@ -138,14 +158,15 @@ Public Class PeopleExtractorr
 
                     FacesDetected += 1
                     Debug.Print("<p><i>" & el.Attributes("Name", "http://www.metadataworkinggroup.com/schemas/regions/").Name & " : " & el.Attributes("Name", "http://www.metadataworkinggroup.com/schemas/regions/").Value & "</i></p>")
-                    Dim strFaceName As String
                     strFaceName = el.Attributes("Name", "http://www.metadataworkinggroup.com/schemas/regions/").Value
                     strFaceName = Regex.Replace(strFaceName, "[^[a-zA-Z0-9_@.-]]*", "_")
 
                     Dim X, Y, W, H As Single
+                    Dim areaUnit As String
                     For Each i As System.Xml.XmlAttribute In el.Attributes
                         Debug.Print("<p>" & i.InnerText & " : " & i.Name & " : " & i.Value & "</p>")
 
+                        ' Haal de area uit de metadata
                         Dim a As System.Xml.XmlNode = el.SelectSingleNode("*[local-name()='Area']")
                         If Not a Is Nothing Then
                             For Each j As System.Xml.XmlAttribute In a.Attributes
@@ -153,12 +174,18 @@ Public Class PeopleExtractorr
                                 Select Case j.Name
                                     Case "stArea:x"
                                         X = CSng(j.Value)
+                                        X = Single.Parse(j.Value, cultureinfo.invariantculture)
                                     Case "stArea:y"
                                         Y = CSng(j.Value)
+                                        Y = Single.Parse(j.Value, CultureInfo.InvariantCulture)
                                     Case "stArea:w"
                                         W = CSng(j.Value)
+                                        W = Single.Parse(j.Value, CultureInfo.InvariantCulture)
                                     Case "stArea:h"
                                         H = CSng(j.Value)
+                                        H = Single.Parse(j.Value, CultureInfo.InvariantCulture)
+                                    Case "stArea:unit"
+                                        areaUnit = CStr(j.Value)
                                 End Select
                             Next
                         End If
@@ -171,7 +198,7 @@ Public Class PeopleExtractorr
                         DateTimeOriginal = CreateDate
                     End If
 
-                    ProcessFace(strFileName, DimW, DimH, DateTimeOriginal, CreateDate, ModifyDate, MetadataDate, strFaceName, X, Y, W, H)
+                    ProcessFace(strFileName, DimW, DimH, DateTimeOriginal, CreateDate, ModifyDate, MetadataDate, strFaceName, X, Y, W, H, Orientation)
                     ToolStripStatusLabel2.Text = "Faces detected: " & FacesDetected
                     Application.DoEvents()
                 End If
@@ -183,10 +210,19 @@ Public Class PeopleExtractorr
     End Sub
     Private Sub ProcessFace(strFileName As String, DimW As Integer, DimH As Integer,
                             DateTimeOriginal As Date, CreateDate As Date, ModifyDate As Date, MetadataDate As Date,
-                            strFaceName As String, X As Single, Y As Single, W As Single, H As Single)
+                            strFaceName As String, X As Single, Y As Single, W As Single, H As Single, Orientation As Integer)
 
         Dim newSection As New Bitmap(CInt(W * DimW), CInt(H * DimH))
         newSection = getSection(CInt(X * DimW) - CInt(0.5 * W * DimW), CInt(Y * DimH) - CInt(0.5 * H * DimH), CInt(W * DimW), CInt(H * DimH))
+
+        Select Case Orientation
+            Case 3
+                newSection.RotateFlip(RotateFlipType.Rotate180FlipNone)
+            Case 6
+                newSection.RotateFlip(RotateFlipType.Rotate90FlipNone)
+            Case 8
+                newSection.RotateFlip(RotateFlipType.Rotate270FlipNone)
+        End Select
 
         ' Create a directory (if needed) for this facename
         If Not Directory.Exists(strExportDir & "\" & strFaceName) Then
@@ -203,6 +239,22 @@ Public Class PeopleExtractorr
 
 
     End Sub
+    Private Function GetOrientation(image As Image) As Integer
+        'Mogelijke waarden
+
+        'Waarde  Betekenis
+        '1   Normaal
+        '3   180°
+        '6   90° CW
+        '8   270° CW
+        Const OrientationId As Integer = &H112
+        Try
+            Dim prop = image.GetPropertyItem(OrientationId)
+            Return BitConverter.ToUInt16(prop.Value, 0)
+        Catch
+            Return 1
+        End Try
+    End Function
     Private Function getSection(x As Integer, y As Integer, w As Integer, h As Integer) As Bitmap
 
         ' Make a Bitmap to hold the result.
